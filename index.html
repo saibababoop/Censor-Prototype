@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Smart Audio Censor Prototype</title>
+    <style>
+        body {
+            background: #141414;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding-top: 50px;
+        }
+        video {
+            border: 4px solid #E50914;
+            border-radius: 8px;
+            width: 640px;
+            max-width: 90%;
+        }
+        .status {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #aaa;
+        }
+        .alert {
+            color: #E50914;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Smart Audio Filter Prototype</h1>
+    <p>The system will automatically mute the video whenever a blocked word is spoken.</p>
+
+    <!-- 1. The Video Player loaded with a public sample video -->
+    <video id="myVideo" controls crossorigin="anonymous">
+        <source src="https://googleapis.com" type="video/mp4">
+       
+        <!-- 2. The Subtitle Track (Forced to display automatically) -->
+        <track id="mySubtitles" label="English" kind="subtitles" srclang="en" src="subtitles.vtt" default>
+    </video>
+
+    <div class="status">System Status: <span id="log">Monitoring...</span></div>
+
+    <!-- 3. The JavaScript Brain -->
+    <script>
+        const video = document.getElementById('myVideo');
+        const trackElement = document.getElementById('mySubtitles');
+        const logDisplay = document.getElementById('log');
+
+        // The list of words you want to censor
+        const BLOCKED_WORDS = ["banana", "apple", "scared"];
+
+        // Wait for the subtitles file to fully load into the browser
+        trackElement.addEventListener('load', function() {
+            const textTrack = this.track;
+            textTrack.mode = 'showing'; // Make sure subtitles show up
+
+            // Listen for the exact moment the subtitle text changes on screen
+            textTrack.addEventListener('cuechange', function() {
+                const activeCues = textTrack.activeCues;
+               
+                if (activeCues.length > 0) {
+                    const currentSubtitleText = activeCues[0].text.toLowerCase();
+                    console.log("Current Text: " + currentSubtitleText);
+
+                    // Check if the subtitle contains any of our blocked words
+                    const foundBadWord = BLOCKED_WORDS.some(word => currentSubtitleText.includes(word));
+
+                    if (foundBadWord) {
+                        video.muted = true; // MUTE THE AUDIO
+                        logDisplay.innerHTML = "<span class='alert'>MUTED (Blocked Word Detected)</span>";
+                    } else {
+                        video.muted = false; // UNMUTE THE AUDIO
+                        logDisplay.textContent = "Monitoring... Audio Clean.";
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:04.000
+Welcome to the smart audio filtering test.
+
+00:00:05.000 --> 00:00:08.000
+In this sentence, I will say the word banana.
+
+00:00:09.000 --> 00:00:12.000
+Now the audio should be completely back to normal.
+
+00:00:13.000 --> 00:00:16.000
+Let us try another blocked word like apple.
+
+00:00:17.000 --> 00:00:20.000
+Thank you for watching this prototype demonstration!
