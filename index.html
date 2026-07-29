@@ -11,11 +11,54 @@
             text-align: center;
             padding-top: 50px;
         }
-        video {
+        .player-container {
             border: 4px solid #E50914;
             border-radius: 8px;
             width: 640px;
+            height: 360px;
             max-width: 90%;
+            margin: 0 auto;
+            background: #000;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .controls {
+            position: absolute;
+            bottom: 10px;
+            width: 90%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,0,0,0.6);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        button {
+            background: #E50914;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .subtitle-box {
+            position: absolute;
+            bottom: 60px;
+            font-size: 1.5em;
+            background: rgba(0,0,0,0.75);
+            padding: 2px 10px;
+            border-radius: 4px;
+            min-height: 30px;
+        }
+        .audio-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 2em;
         }
         .status {
             margin-top: 20px;
@@ -25,58 +68,107 @@
         .alert {
             color: #E50914;
             font-weight: bold;
+            animation: flash 1s infinite;
+        }
+        @keyframes flash {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
         }
     </style>
 </head>
 <body>
 
-    <h1>Smart Audio Filter Prototype</h1>
-    <p>The system will automatically mute the video whenever a blocked word is spoken.</p>
+    <h1>Smart Audio Filter Simulation</h1>
+    <p>Bypassing browser stream restrictions. Press PLAY to simulate the engine logic.</p>
 
-    <!-- 1. The Video Player loaded with a public sample video -->
-    <video id="myVideo" controls crossorigin="anonymous">
-        <source src="https://w3.org" type="video/mp4">
+    <div class="player-container">
+        <div id="audioIcon" class="audio-indicator">🔊</div>
+        <div id="visualizer" style="font-size: 4em;">🎬</div>
+        <div id="subtitles" class="subtitle-box"></div>
        
-        <!-- 2. The Subtitle Track (Forced to display automatically) -->
-        <track id="mySubtitles" label="English" kind="subtitles" srclang="en" src="subtitles.vtt" default>
-    </video>
+        <div class="controls">
+            <button id="playBtn">PLAY</button>
+            <div id="timer">00:00</div>
+        </div>
+    </div>
 
-    <div class="status">System Status: <span id="log">Monitoring...</span></div>
+    <div class="status">System Status: <span id="log">Ready to test...</span></div>
 
-    <!-- 3. The JavaScript Brain -->
     <script>
-        const video = document.getElementById('myVideo');
-        const trackElement = document.getElementById('mySubtitles');
+        const playBtn = document.getElementById('playBtn');
+        const timerDisplay = document.getElementById('timer');
+        const subtitleBox = document.getElementById('subtitles');
+        const audioIcon = document.getElementById('audioIcon');
         const logDisplay = document.getElementById('log');
+        const visualizer = document.getElementById('visualizer');
 
-        // The list of words you want to censor
-        const BLOCKED_WORDS = ["banana", "apple", "scared"];
+        let isPlaying = false;
+        let currentTime = 0;
+        let timerInterval = null;
 
-        // Wait for the subtitles file to fully load into the browser
-        trackElement.addEventListener('load', function() {
-            const textTrack = this.track;
-            textTrack.mode = 'showing'; // Make sure subtitles show up
+        // Our blocked words list
+        const BLOCKED_WORDS = ["banana", "apple"];
 
-            // Listen for the exact moment the subtitle text changes on screen
-            textTrack.addEventListener('cuechange', function() {
-                const activeCues = textTrack.activeCues;
+        // The timeline map mirroring your VTT file layout
+        const scriptTimeline = [
+            { start: 1, end: 4, text: "Welcome to the smart audio filtering test." },
+            { start: 5, end: 8, text: "In this sentence, I will say the word banana." },
+            { start: 9, end: 12, text: "Now the audio should be completely back to normal." },
+            { start: 13, end: 16, text: "Let us try another blocked word like apple." },
+            { start: 17, end: 20, text: "Thank you for watching this prototype demonstration!" }
+        ];
+
+        playBtn.addEventListener('click', () => {
+            if (isPlaying) {
+                clearInterval(timerInterval);
+                playBtn.textContent = "PLAY";
+                logDisplay.textContent = "Paused.";
+                isPlaying = false;
+            } else {
+                playBtn.textContent = "PAUSE";
+                logDisplay.textContent = "Monitoring... Audio Clean.";
+                isPlaying = true;
                
-                if (activeCues.length > 0) {
-                    const currentSubtitleText = activeCues[0].text.toLowerCase();
-                    console.log("Current Text: " + currentSubtitleText);
+                timerInterval = setInterval(() => {
+                    currentTime++;
+                   
+                    // Update clock layout
+                    let seconds = currentTime < 10 ? "0" + currentTime : currentTime;
+                    timerDisplay.textContent = "00:" + seconds;
 
-                    // Check if the subtitle contains any of our blocked words
-                    const foundBadWord = BLOCKED_WORDS.some(word => currentSubtitleText.includes(word));
+                    // Match timeline text
+                    let currentLine = scriptTimeline.find(line => currentTime >= line.start && currentTime <= line.end);
 
-                    if (foundBadWord) {
-                        video.muted = true; // MUTE THE AUDIO
-                        logDisplay.innerHTML = "<span class='alert'>MUTED (Blocked Word Detected)</span>";
+                    if (currentLine) {
+                        subtitleBox.textContent = currentLine.text;
+                        let textLower = currentLine.text.toLowerCase();
+                       
+                        // CENSOR CHECK LOGIC
+                        let foundBadWord = BLOCKED_WORDS.some(word => textLower.includes(word));
+
+                        if (foundBadWord) {
+                            audioIcon.textContent = "🔇";
+                            visualizer.textContent = "🤬";
+                            logDisplay.innerHTML = "<span class='alert'>MUTED (Blocked Word Detected)</span>";
+                        } else {
+                            audioIcon.textContent = "🔊";
+                            visualizer.textContent = "🍿";
+                            logDisplay.textContent = "Monitoring... Audio Clean.";
+                        }
                     } else {
-                        video.muted = false; // UNMUTE THE AUDIO
+                        subtitleBox.textContent = "";
+                        audioIcon.textContent = "🔊";
+                        visualizer.textContent = "🎬";
                         logDisplay.textContent = "Monitoring... Audio Clean.";
                     }
-                }
-            });
+
+                    // Reset loop at end of demo script
+                    if (currentTime >= 21) {
+                        currentTime = 0;
+                    }
+                }, 1000);
+            }
         });
     </script>
 </body>
